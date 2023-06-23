@@ -1,23 +1,19 @@
-import { useEffect, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { removeDog, addDog, getDogs } from "./dogsSlice";
+import { useRef } from "react";
+import { useSelector } from "react-redux";
+
+import { useGetDogsQuery, useAddDogMutation, useRemoveDogMutation } from "../../store/apiSlice";
 import { LuckyDog } from "./LuckyDog";
 
 export function DogsPage() {
   const dialogRef = useRef();
-  const dispatch = useDispatch();
-  const dogsReady = useSelector((state) => state.dogs.dogsReady);
-  const myDogs = useSelector((state) => state.dogs.myDogs);
+
+  const {data: dogs, isLoading} = useGetDogsQuery();
+  const [addDog] = useAddDogMutation();
   const luckyDog = useSelector((state) => state.dogs.luckyDog);
-
-  useEffect(() => {
-    if (dogsReady) return;
-    dispatch(getDogs());
-  }, [dispatch, dogsReady]);
-
+  const [removeDog] = useRemoveDogMutation();
   const handleDeleteDog = (e, dog) => {
     e.preventDefault();
-    dispatch(removeDog(dog.id));
+    removeDog(dog.id);
   };
 
   const handleNewDog = (e) => {
@@ -27,9 +23,14 @@ export function DogsPage() {
     const data = Object.fromEntries(formData);
 
     // add the dog, then refetch the list
-    dispatch(addDog(data)).then(() => {
-      dispatch(getDogs());
-    });
+    addDog(data)
+      // .unwrap()
+      // .then(()=>{
+      //   refetch();
+      // }).catch(response => {
+      //   const message = `Adding dog failed: ${JSON.stringify(response)}`;
+      //   alert(message);
+      // });
 
     // close immediately we don't need to wait
     dialogRef.current?.close();
@@ -42,13 +43,13 @@ export function DogsPage() {
         list of <i>all</i> of your dogs, so that we can provide them with the
         best services possible.
       </p>
-      {Object.values(myDogs).length > 0 && (
+      {!isLoading && Object.values(dogs).length > 0 && (
         <>
           <p>Choose the lucky dog that will be groomed next.</p>
           <LuckyDog />
         </>
       )}
-      {Object.values(myDogs).map((dog) => {
+      {!isLoading && Object.values(dogs).map((dog) => {
         return (
           <div
             key={dog.id}
